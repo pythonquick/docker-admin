@@ -16,11 +16,16 @@ for service in `docker service ls | awk '($2 != "viz" && $2 != "NAME") { print $
         if [ $available_node_count -gt $container_node_count ]
         then
             replicas="`docker service inspect ${service} --pretty | grep Replicas | awk '{ print $NF }'`"
+            # Note: replicas should equal container_count, right?
             echo "service ${service} needs to be rebalanced to ${replicas} replicas"
-            docker service scale ${service}=1
-            docker service scale ${service}=${relicas}
+
+            # Rebalance the containers by first scaling down, then up
+            docker service scale ${service}=${container_node_count}
+            docker service scale ${service}=${replicas}
+	else
+	    echo "service ${service} can be rebalanced when adding a node"
         fi
     else
         echo "service ${service} does not need to be rebalanced"
     fi
-donep
+done
